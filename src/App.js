@@ -1,26 +1,26 @@
 import React, { Component } from 'react';
-import { Navbar, Button, FormGroup, FormControl, Grid, Row, Col } from 'react-bootstrap';
+import { Navbar, Button, FormGroup, FormControl, ControlLabel, Grid, Row, Col, Alert } from 'react-bootstrap';
 import { withRouter } from 'react-router-dom';
-import './App.css';
 import { AccountHttp, NEMLibrary, NetworkTypes, Address, TransferTransaction, XEM, TransactionHttp, TimeWindow, PlainMessage, Account } from "nem-library";
 
 class App extends Component {
   constructor(props, context) {
     super(props, context);
 
-    this.handleChange = this.handleChange.bind(this);
+    this.handleChangeAddress = this.handleChangeAddress.bind(this);
     this.handleChangePrivateKey = this.handleChangePrivateKey.bind(this);
-    this.handleGetAccountInfo = this.handleGetAccountInfo.bind(this);
+    this.getAccountInfo = this.getAccountInfo.bind(this);
     this.handleChangeTargetAddress = this.handleChangeTargetAddress.bind(this);
     this.handleChangeAmount = this.handleChangeAmount.bind(this);
-    this.handleTransfer= this.handleTransfer.bind(this);
-
+    this.transfer= this.transfer.bind(this);
     this.state = {
       address: '',
       privateKey: '',
       targetAddress: '',
       balance: null,
       amount: 0,
+      successMessage: '',
+      errorMessage: '',
     };
   }
 
@@ -37,13 +37,12 @@ class App extends Component {
       this.setState({ address: address });
       accountHttp.getFromAddress(new Address(address))
         .subscribe(accountInfoWithMetaData => {
-          console.log(accountInfoWithMetaData)
           this.setState({ balance: accountInfoWithMetaData.balance.balance / 1000 });
         });
     }
   }
 
-  handleChange(e) {
+  handleChangeAddress(e) {
     this.setState({ address: e.target.value });
   }
 
@@ -59,12 +58,12 @@ class App extends Component {
     this.setState({ amount: e.target.value });
   }
 
-  handleGetAccountInfo() {
+  getAccountInfo() {
     this.props.history.push(`/?address=${this.state.address}`);
     this.setBalance(this.state.address);
   }
 
-  handleTransfer() {
+  transfer() {
     const transferTransaction  = TransferTransaction.create(
         TimeWindow.createWithDeadline(),
         new Address(this.state.targetAddress),
@@ -74,68 +73,101 @@ class App extends Component {
 
     const account = Account.createWithPrivateKey(this.state.privateKey);
     const signedTransaction = account.signTransaction(transferTransaction);
-
     const transactionHttp = new TransactionHttp();
+    this.setState({ successMessage: '', errorMessage: ''});
     transactionHttp.announceTransaction(signedTransaction)
-    .subscribe(
-        value => {console.log( "リクエスト結果：\n" + value.message);},
-        err => {console.log( "失敗：\n" + err.toString());}
-    );
+      .subscribe(
+          value => {
+            console.log( "リクエスト結果：\n" + value.message);
+            this.setState({ successMessage: value.message });
+          },
+          err => {
+            console.log( "失敗：\n" + err.toString());
+            this.setState({ errorMessage: err.toString() });
+          }
+      );
   }
 
   render() {
     let contents;
-    if (this.state.address != null) {
-                contents = (
-                  <div>
-                    <h2>アカウント情報</h2>
-                    <p>アドレス：{this.state.address}</p>
-                    <p>残高： {this.state.balance / 1000}XEM</p>
-                    <form>
-                      <FormGroup>
-                        <FormControl
-                          type="text"
-                          value={this.state.privateKey}
-                          onChange={this.handleChangePrivateKey}
-                          className='fit-input'
-                        />
-                      </FormGroup>
-                      <FormGroup>
-                        <FormControl
-                          type="text"
-                          value={this.state.targetAddress}
-                          onChange={this.handleChangeTargetAddress}
-                          className='fit-input'
-                        />
-                      </FormGroup>
-                      <FormGroup>
-                        <FormControl
-                          type="text"
-                          value={this.state.amount}
-                          onChange={this.handleChangeAmount}
-                        />
-                      </FormGroup>
-                    </form>
-                    <Button bsStyle="primary" onClick={this.handleTransfer}>XEMを送金する</Button>
-                  </div>
-                )
-              } else {
-                contents = (
-                  <div>
-                    アドレスを入力してください。
-                    <form>
-                      <FormGroup>
-                        <FormControl
-                          type="text"
-                          value={this.state.address}
-                          onChange={this.handleChange}
-                        />
-                      </FormGroup>
-                    </form>
-                    <Button bsStyle="primary" onClick={this.handleGetAccountInfo}>アカウント情報を取得する</Button>
-                  </div>
-                )
-              }
+    if (this.state.balance != null) {
+      let transferResult;
+      if (this.state.successMessage != '') {
+        transferResult = (
+          <Alert bsStyle="success">
+            <h4>送金成功</h4>
+            <p>{this.state.successMessage}</p>
+          </Alert>
+        )
+      } else if (this.state.errorMessage != '') {
+        transferResult = (
+          <Alert bsStyle="danger">
+            <h4>送金失敗</h4>
+            <p>{this.state.errorMessage}</p>
+          </Alert>
+        )
+      }
+
+      contents = (
+        <div>
+          <h2>アカウント情報</h2>
+          <p>アドレス：{this.state.address}</p>
+          <p>残高： {this.state.balance / 1000}XEM</p>
+          <h2>送金</h2>
+          <form>
+            <FormGroup>
+              <ControlLabel>送金先アドレス</ControlLabel>
+              <FormControl
+                type="text"
+                value={this.state.targetAddress}
+                onChange={this.handleChangeTargetAddress}
+              />
+            </FormGroup>
+            <FormGroup>
+              <ControlLabel>秘密鍵</ControlLabel>
+              <FormControl
+                type="text"
+                value={this.state.privateKey}
+                onChange={this.handleChangePrivateKey}
+              />
+            </FormGroup>
+            <Row>
+              <Col md={2}>
+                <FormGroup>
+                  <ControlLabel>送金金額</ControlLabel>
+                  <FormControl
+                    type="number"
+                    value={this.state.amount}
+                    onChange={this.handleChangeAmount}
+                  />
+                </FormGroup>
+              </Col>
+            </Row>
+          </form>
+          <Button bsStyle="primary" onClick={this.transfer}>XEMを送金する</Button>
+          <h2>送金結果</h2>
+          { transferResult }
+        </div>
+      )
+    } else {
+      contents = (
+        <div>
+          <h2>アカウント情報の取得</h2>
+          <form>
+            <FormGroup>
+              <ControlLabel>アドレス</ControlLabel>
+              <FormControl
+                type="text"
+                placeholder="ここにNEMアドレスを入力して下さい"
+                value={this.state.address}
+                onChange={this.handleChangeAddress}
+              />
+            </FormGroup>
+          </form>
+          <Button bsStyle="primary" onClick={this.getAccountInfo}>アカウント情報を取得する</Button>
+        </div>
+      )
+    }
     return (
       <div>
         <Navbar>
@@ -146,8 +178,8 @@ class App extends Component {
           </Navbar.Header>
         </Navbar>
         <Grid>
-          <Row className="show-grid">
-            <Col md={10}>
+          <Row>
+            <Col md={6}>
               { contents }
             </Col>
           </Row>
