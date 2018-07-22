@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Button, FormGroup, FormControl, ControlLabel, Row, Col, Alert } from 'react-bootstrap';
-import { Address, TransferTransaction, XEM, TransactionHttp, TimeWindow, PlainMessage, Account } from "nem-library";
+import { Address, TransferTransaction, XEM, TransactionHttp, TimeWindow, PlainMessage, Account } from 'nem-library';
 
 class TransferForm extends Component {
   constructor(props, context) {
@@ -9,7 +9,7 @@ class TransferForm extends Component {
     this.handleChangePrivateKey = this.handleChangePrivateKey.bind(this);
     this.handleChangeTargetAddress = this.handleChangeTargetAddress.bind(this);
     this.handleChangeAmount = this.handleChangeAmount.bind(this);
-    this.transfer= this.transfer.bind(this);
+    this.transfer = this.transfer.bind(this);
     this.state = {
       privateKey: '',
       targetAddress: '',
@@ -32,32 +32,29 @@ class TransferForm extends Component {
   }
 
   transfer() {
-    const transferTransaction  = TransferTransaction.create(
-        TimeWindow.createWithDeadline(),
-        new Address(this.state.targetAddress),
-        new XEM(this.state.amount),
-        PlainMessage.create("送金テスト")
+    const transferTransaction = TransferTransaction.create(
+      TimeWindow.createWithDeadline(),
+      new Address(this.state.targetAddress),
+      new XEM(this.state.amount),
+      PlainMessage.create('送金テスト'),
     );
 
     const account = Account.createWithPrivateKey(this.state.privateKey);
     const signedTransaction = account.signTransaction(transferTransaction);
     const transactionHttp = new TransactionHttp();
-    this.setState({ successMessage: '', errorMessage: ''});
+    this.setState({ successMessage: '', errorMessage: '' });
     transactionHttp.announceTransaction(signedTransaction)
       .subscribe(
-          value => {
-            console.log( "リクエスト結果：\n" + value.message);
-            this.setState({ successMessage: value.message });
-          },
-          err => {
-            console.log( "失敗：\n" + err.toString());
-            this.setState({ errorMessage: err.toString() });
-          }
+        value => {
+          this.setState({ successMessage: value.message });
+        },
+        err => {
+          this.setState({ errorMessage: err.toString() });
+        },
       );
   }
 
-  render () {
-
+  render() {
     let transferResult;
     if (this.state.successMessage !== '') {
       transferResult = (
@@ -65,14 +62,14 @@ class TransferForm extends Component {
           <h4>送金成功</h4>
           <p>{this.state.successMessage}</p>
         </Alert>
-      )
+      );
     } else if (this.state.errorMessage !== '') {
       transferResult = (
         <Alert bsStyle="danger">
           <h4>送金失敗</h4>
           <p>{this.state.errorMessage}</p>
         </Alert>
-      )
+      );
     }
 
     return (
@@ -112,7 +109,7 @@ class TransferForm extends Component {
         <h2>送金結果</h2>
         { transferResult }
       </div>
-    )
+    );
   }
 }
 

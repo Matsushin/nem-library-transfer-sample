@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Button, FormGroup, FormControl, ControlLabel } from 'react-bootstrap';
-import { AccountHttp, Address  } from "nem-library";
+import { AccountHttp, Address } from 'nem-library';
 
 class AccountForm extends Component {
   constructor(props, context) {
@@ -17,25 +17,25 @@ class AccountForm extends Component {
 
   setBalance(address) {
     if (address !== null) {
-      let accountHttp: AccountHttp = new AccountHttp();
+      const accountHttp = new AccountHttp();
       accountHttp.getFromAddress(new Address(address))
         .subscribe(accountInfoWithMetaData => {
-          const balance = accountInfoWithMetaData.balance.balance / 1000
+          const balance = accountInfoWithMetaData.balance.balance / 1000;
           this.props.setBalance(address, balance);
         });
     }
+  }
+
+  getAccountInfo() {
+    this.setBalance(this.state.address);
+    this.setState({ address: this.state.address });
   }
 
   handleChangeAddress(e) {
     this.setState({ address: e.target.value });
   }
 
-  getAccountInfo() {
-    this.setState({ address: this.state.address });
-    this.setBalance(this.state.address)
-  }
-
-  render () {
+  render() {
     return (
       <div>
         <h2>アカウント情報の取得</h2>
@@ -52,7 +52,7 @@ class AccountForm extends Component {
         </form>
         <Button bsStyle="primary" onClick={this.getAccountInfo}>アカウント情報を取得する</Button>
       </div>
-    )
+    );
   }
 }
 
