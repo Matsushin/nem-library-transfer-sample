@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import { Navbar, Button, FormGroup, FormControl, ControlLabel, Grid, Row, Col } from 'react-bootstrap';
+import { Navbar, Grid, Row, Col } from 'react-bootstrap';
 import { withRouter } from 'react-router-dom';
-import { AccountHttp, NEMLibrary, NetworkTypes, Address } from "nem-library";
+import { NEMLibrary, NetworkTypes } from "nem-library";
 import AccountForm from './form/AccountForm';
 import TransferForm from './form/TransferForm';
 
@@ -9,7 +9,7 @@ class App extends Component {
   constructor(props, context) {
     super(props, context);
 
-    this.getAccountInfo = this.getAccountInfo.bind(this);
+    this.setBalance = this.setBalance.bind(this);
     this.state = {
       address: '',
       balance: null,
@@ -20,28 +20,17 @@ class App extends Component {
     NEMLibrary.bootstrap(NetworkTypes.TEST_NET);
     const params = new URLSearchParams(this.props.location.search);
     const address = params.get('address');
-    this.setBalance(address);
+    this.setState({ address: address });
   }
 
-  setBalance(address) {
-    if (address !== null) {
-      let accountHttp: AccountHttp = new AccountHttp();
-      this.setState({ address: address });
-      accountHttp.getFromAddress(new Address(address))
-        .subscribe(accountInfoWithMetaData => {
-          this.setState({ balance: accountInfoWithMetaData.balance.balance / 1000 });
-        });
-    }
-  }
-
-  getAccountInfo(address) {
-    this.props.history.push(`/?address=${this.state.address}`);
-    this.setBalance(address);
+  setBalance(address, balance) {
+      this.props.history.push(`/?address=${address}`);
+      this.setState({ address: address, balance: balance });
   }
 
   render() {
     let contents;
-    if (this.state.balance != null) {
+    if (this.state.balance !== null) {
       contents = (
         <div>
           <h2>アカウント情報</h2>
@@ -51,7 +40,7 @@ class App extends Component {
         </div>
       )
     } else {
-      contents = <AccountForm getAccountInfo={this.getAccountInfo} />
+      contents = <AccountForm address={this.state.address} setBalance={this.setBalance} />
     }
     return (
       <div>

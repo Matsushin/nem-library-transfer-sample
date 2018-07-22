@@ -1,19 +1,38 @@
 import React, { Component } from 'react';
 import { Button, FormGroup, FormControl, ControlLabel } from 'react-bootstrap';
-import { Address, TransferTransaction, XEM, TransactionHttp, TimeWindow, PlainMessage, Account } from "nem-library";
+import { AccountHttp, Address  } from "nem-library";
 
 class AccountForm extends Component {
   constructor(props, context) {
     super(props, context);
 
     this.handleChangeAddress = this.handleChangeAddress.bind(this);
+    this.getAccountInfo = this.getAccountInfo.bind(this);
     this.state = {
-      address: '',
+      address: this.props.address || '',
     };
+
+    this.setBalance(this.props.address);
+  }
+
+  setBalance(address) {
+    if (address !== null) {
+      let accountHttp: AccountHttp = new AccountHttp();
+      accountHttp.getFromAddress(new Address(address))
+        .subscribe(accountInfoWithMetaData => {
+          const balance = accountInfoWithMetaData.balance.balance / 1000
+          this.props.setBalance(address, balance);
+        });
+    }
   }
 
   handleChangeAddress(e) {
     this.setState({ address: e.target.value });
+  }
+
+  getAccountInfo() {
+    this.setState({ address: this.state.address });
+    this.setBalance(this.state.address)
   }
 
   render () {
@@ -31,7 +50,7 @@ class AccountForm extends Component {
             />
           </FormGroup>
         </form>
-        <Button bsStyle="primary" onClick={() => this.props.getAccountInfo(this.state.address)}>アカウント情報を取得する</Button>
+        <Button bsStyle="primary" onClick={this.getAccountInfo}>アカウント情報を取得する</Button>
       </div>
     )
   }
